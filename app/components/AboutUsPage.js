@@ -28,9 +28,32 @@ export default function ActivitiesGrid() {
 
   const limitedActivities = activities.slice(0, HOME_LIMIT);
 
+  // Flatten all images for the gallery lightbox
+  const galleryImages = limitedActivities.flatMap((item) =>
+    (item.file_path || []).map((img) => ({
+      src: img,
+      title: item.title,
+    }))
+  );
+
+  const openGallery = (imgSrc) => {
+    const index = galleryImages.findIndex((img) => img.src === imgSrc);
+    if (index !== -1) setSelectedImage(index);
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setSelectedImage((prev) => (prev + 1) % galleryImages.length);
+  };
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setSelectedImage((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+  };
+
   return (
     <section className="w-full py-12 flex flex-col items-center bg-[#f6eee0] overflow-hidden">
-      
+
       {/* HEADING */}
       <h2 className="text-center text-4xl font-serif font-bold mb-6 text-[#7A0026]">
         कार्यक्रम / उपक्रम
@@ -54,7 +77,7 @@ export default function ActivitiesGrid() {
             {item.file_path?.[0] && (
               <div
                 className="relative h-[170px] w-full cursor-pointer"
-                onClick={() => setSelectedImage(item.file_path[0])}
+                onClick={() => openGallery(item.file_path[0])}
               >
                 <Image
                   src={item.file_path[0]}
@@ -69,7 +92,7 @@ export default function ActivitiesGrid() {
             {item.file_path?.[1] && (
               <div
                 className="relative h-[170px] w-full cursor-pointer"
-                onClick={() => setSelectedImage(item.file_path[1])}
+                onClick={() => openGallery(item.file_path[1])}
               >
                 <Image
                   src={item.file_path[1]}
@@ -101,26 +124,58 @@ export default function ActivitiesGrid() {
       )}
 
       {/* IMAGE MODAL */}
-      {selectedImage && (
+      {selectedImage !== null && galleryImages[selectedImage] && (
         <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="relative max-w-4xl w-full px-4">
-            <button
-              className="absolute top-3 right-3 text-white text-2xl"
-              onClick={() => setSelectedImage(null)}
-            >
-              <FaTimes />
-            </button>
+          {/* Close Button */}
+          <button
+            className="absolute top-5 right-5 text-white text-3xl z-[60] hover:text-gray-300 transition-colors"
+            onClick={() => setSelectedImage(null)}
+          >
+            <FaTimes />
+          </button>
 
-            <div className="relative w-full h-[80vh]">
+          <div
+            className="relative max-w-5xl w-full flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative w-full h-[70vh] md:h-[80vh] group rounded-lg overflow-hidden flex items-center justify-center">
               <Image
-                src={selectedImage}
-                alt="Preview"
+                src={galleryImages[selectedImage].src}
+                alt={galleryImages[selectedImage].title}
                 fill
-                className="object-contain rounded-lg"
+                className="object-contain"
               />
+
+              {/* Previous Button */}
+              <button
+                className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/60 p-2 md:p-3 rounded-full transition-all z-[60] backdrop-blur-[2px]"
+                onClick={handlePrev}
+                aria-label="Previous Image"
+              >
+                &#10094;
+              </button>
+
+              {/* Next Button */}
+              <button
+                className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/60 p-2 md:p-3 rounded-full transition-all z-[60] backdrop-blur-[2px]"
+                onClick={handleNext}
+                aria-label="Next Image"
+              >
+                &#10095;
+              </button>
+            </div>
+
+            {/* Title Caption */}
+            <div className="mt-4 text-center">
+              <h3 className="text-white text-xl md:text-2xl font-serif font-bold tracking-wide">
+                {galleryImages[selectedImage].title}
+              </h3>
+              <p className="text-gray-300 text-sm mt-1">
+                Image {selectedImage + 1} of {galleryImages.length}
+              </p>
             </div>
           </div>
         </div>

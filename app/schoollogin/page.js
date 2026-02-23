@@ -30,7 +30,7 @@ const Login = () => {
       } else {
         Swal.fire("Error", data.message, "error");
       }
-      
+
     } catch (error) {
       Swal.fire("Error", "An error occurred", "error");
     }
@@ -74,6 +74,11 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+          </div>
+          <div className="text-right">
+            <a href="/forgot-password" className="text-sm text-teal-600 hover:text-teal-800">
+              Forgot Password?
+            </a>
           </div>
 
           <button

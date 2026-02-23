@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   FaChevronDown,
   FaHome,
   FaInfoCircle,
@@ -12,7 +12,7 @@ import {
   FaGlobe,
   FaDownload,
   FaGavel,
-   FaUser    // ✅ new
+  FaUser    // ✅ new
 } from "react-icons/fa";
 
 
@@ -25,7 +25,7 @@ export default function Header() {
   const menuItems = [
     { title: "मुख्य पृष्ठ", href: "/", icon: <FaHome /> },
     {
-      title: "आमच्याविषयी",
+      title: "संस्थेविषयी",
       icon: <FaInfoCircle />,
       submenu: [
         { title: "इतिहास", href: "/about" },
@@ -34,7 +34,19 @@ export default function Header() {
         { title: "सामंजस्य करार", href: "/mou" },
       ],
     },
-    { title: "व्यवस्थापन", href: "/management", icon: <FaUsers /> },
+
+    {
+      title: "व्यवस्थापन",
+      icon: <FaBook />,
+      submenu: [
+        { title: "संस्थेची प्रशासन व्यवस्था", href: "/management1" },
+        { title: "प्रशासन यंत्रणा", href: "/management2" },
+        { title: "अधिकार मंडळे", href: "/research" },
+
+        { title: "मॅनेजिंग कौन्सिल", href: "/management" },
+      ],
+    },
+   
     // {
     //   title: "प्रकल्प",
     //   icon: <FaSitemap />,
@@ -46,35 +58,35 @@ export default function Header() {
     //   ],
     // },
     {
-  title: "शाखा",
-  icon: <FaSitemap />,
-  submenu: [
-    { title: "महाविद्यालयांची यादी", href: "/colleges" },
-    { title: "माध्यमिक शाळा", href: "/schools" },
-    { title: "प्राथमिक शाळा", href: "/primaryschool" },
-    { title: "आश्रमशाळा", href: "/ashramshala" },
-    { title: "अध्यापक प्रशिक्षण शाळा", href: "/teachertraining" },
-    { title: "प्रशासकीय कार्यालये", href: "/offices" },
-    {
-      title: (
-        <>
-          रयत सायन्स इंन्होव्हेशन <br />
-          अ‍ॅक्टिव्हिटी सेंटर
-        </>
-      ),
-      href: "/rsiac",
+      title: "शाखा",
+      icon: <FaSitemap />,
+      submenu: [
+        { title: "महाविद्यालये", href: "/colleges" },
+        { title: "माध्यमिक शाळा", href: "/schools" },
+        { title: "प्राथमिक शाळा", href: "/primaryschool" },
+        { title: "आश्रमशाळा", href: "/ashramshala" },
+        { title: "अध्यापक प्रशिक्षण शाळा", href: "/teachertraining" },
+        { title: "प्रशासकीय कार्यालये", href: "/offices" },
+        {
+          title: (
+            <>
+              रयत सायन्स इंन्होव्हेशन <br />
+              अ‍ॅक्टिव्हिटी सेंटर
+            </>
+          ),
+          href: "/rsiac",
+        },
+        {
+          title: (
+            <>
+              रयत सेंटर फॉर इन्व्हेंशन,  <br />
+              इनोव्हेशन अँड इन्क्यूबेशन
+            </>
+          ),
+          href: "/ciii",
+        },
+      ],
     },
-    {
-      title: (
-        <>
-        रयत सेंटर फॉर इन्व्हेंशन,  <br />
-          इनोव्हेशन अँड इन्क्यूबेशन
-        </>
-      ),
-      href: "/ciii",
-    },
-  ],
-},
 
     {
       title: "साध्यक्रम",
@@ -88,9 +100,18 @@ export default function Header() {
     { title: "डाउनलोड्स", href: "/downloads", icon: <FaDownload /> },
     { title: "ऑनलाईन माहिती", href: "/onlineinfo", icon: <FaGlobe /> },
     { title: "ई-पुस्तके", href: "/ebooks", icon: <FaDownload /> },
-    { title: "द्रुत दुवे", href: "/quicklinks", icon: <FaDownload /> },
-     { title: "जाहीर नोटीस", href: "/notice", icon: <FaDownload /> },
-   { title: "लॉगिन", href: "/login", icon: < FaUser  /> }
+    // { title: "द्रुत दुवे", href: "/quicklinks", icon: <FaDownload /> },
+    { title: "जाहीर नोटीस", href: "/notice", icon: <FaDownload /> },
+    { title: "अभिप्राय", href: "/feedback", icon: < FaUser /> },
+
+    {
+      title: "लॉगिन",
+      icon: <FaBook />,
+      submenu: [
+        { title: "अ‍ॅडमिन लॉगिन", href: "/login" },
+        { title: "शाखा लॉगिन ", href: "/registration" },
+      ],
+    },
 
   ];
 
@@ -144,16 +165,16 @@ export default function Header() {
               {menuItems.map((item, index) => (
                 <div key={index}>
                   <div
-  onClick={() => {
-    if (item.submenu) {
-      setOpenSubMenu(openSubMenu === index ? null : index);
-    } else {
-      window.location.href = item.href;
-      setMobileOpen(false);
-    }
-  }}
-  className="flex justify-between items-center py-3 border-b border-white/20 cursor-pointer"
->
+                    onClick={() => {
+                      if (item.submenu) {
+                        setOpenSubMenu(openSubMenu === index ? null : index);
+                      } else {
+                        window.location.href = item.href;
+                        setMobileOpen(false);
+                      }
+                    }}
+                    className="flex justify-between items-center py-3 border-b border-white/20 cursor-pointer"
+                  >
 
                     <span className="flex items-center gap-2">
                       {item.icon}

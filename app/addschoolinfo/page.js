@@ -25,6 +25,8 @@ export default function AddSchoolInfo() {
   const [scholarshipResult, setScholarshipResult] = useState("");
   const [sscResult, setSscResult] = useState("");
   const [hscResult, setHscResult] = useState("");
+  const [mahitiPustikka, setMahitiPustikka] = useState("");
+  const [pdfUploading, setPdfUploading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -45,6 +47,33 @@ export default function AddSchoolInfo() {
 
     fetchSchoolId();
   }, []);
+
+  const handlePdfChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+      setMessage("Please select a PDF file.");
+      return;
+    }
+    setPdfUploading(true);
+    setMessage("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/uploadSchoolInfoPdf", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.filePath) {
+        setMahitiPustikka(data.filePath);
+        setMessage("PDF uploaded. You can submit the form.");
+      } else {
+        setMessage(data?.error || "PDF upload failed.");
+      }
+    } catch (err) {
+      setMessage("PDF upload failed.");
+    } finally {
+      setPdfUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,10 +114,11 @@ export default function AddSchoolInfo() {
           facilities,
           achievements,
           studentStdDivision,
-          medium, // <-- add medium
-          scholarshipResult, // <-- add scholarship result
-          sscResult, // <-- add ssc result
-          hscResult, // <-- add hsc result
+          medium,
+          scholarshipResult,
+          sscResult,
+          hscResult,
+          mahiti_pustikka: mahitiPustikka || null,
         }),
       });
 
@@ -107,6 +137,7 @@ export default function AddSchoolInfo() {
         setFacilities("");
         setAchievements("");
         setStudentStdDivision([]);
+        setMahitiPustikka("");
         router.push("/manageschoolinfo");
       } else {
         setMessage(data.error || "Failed to submit information.");
@@ -207,6 +238,18 @@ export default function AddSchoolInfo() {
                 <Input label="Scholarship Result" value={scholarshipResult} onChange={setScholarshipResult} />
                 <Input label="SSC Result" value={sscResult} onChange={setSscResult} />
                 <Input label="HSC Result (If Junior college attached)" value={hscResult} onChange={setHscResult} />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">Mahiti Pustikka (PDF)</label>
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handlePdfChange}
+                  disabled={pdfUploading}
+                  className="w-full p-2 border rounded file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-teal-50 file:text-teal-700"
+                />
+                {pdfUploading && <p className="text-sm text-gray-500 mt-1">Uploading…</p>}
+                {mahitiPustikka && <p className="text-sm text-green-600 mt-1">PDF attached.</p>}
               </div>
               <button type="submit" className="bg-teal-900 text-white p-2 rounded w-full mt-2">
                 Submit Information

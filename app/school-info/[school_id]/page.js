@@ -2,342 +2,448 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { FaUserTie, FaChalkboardTeacher, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaUniversity, FaUserGraduate, FaTrophy, FaBuilding, FaBookOpen, FaSchool, FaFilePdf } from "react-icons/fa";
+
+// Logo with fallback when image missing so layout stays correct
+function HeaderLogo({ src, alt }) {
+  const [errored, setErrored] = useState(false);
+  return (
+    <div className="relative w-28 h-28 md:w-32 md:h-32 bg-white rounded-full shadow-2xl border-4 border-yellow-400 flex items-center justify-center overflow-hidden flex-shrink-0">
+      {!errored ? (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes="128px"
+          className="object-contain p-3"
+          priority
+          onError={() => setErrored(true)}
+        />
+      ) : (
+        <span className="text-gray-300 flex items-center justify-center p-2" title={alt}>
+          <FaSchool className="w-12 h-12 md:w-14 md:h-14" />
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function SchoolProfile() {
   const { school_id } = useParams();
   const [schoolInfo, setSchoolInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Edit mode states (keeping minimal logic for now, focus on View)
   const [editMode, setEditMode] = useState(false);
   const [message, setMessage] = useState("");
-  const router = useRouter();
 
-  const [principalName, setPrincipalName] = useState("");
-  const [vicePrincipalName, setVicePrincipalName] = useState("");
-  const [contact, setContact] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
-  const [motto, setMotto] = useState("");
-  const [established, setEstablished] = useState("");
-  const [affiliation, setAffiliation] = useState("");
-  const [studentCount, setStudentCount] = useState("");
-  const [facilities, setFacilities] = useState("");
-  const [achievements, setAchievements] = useState("");
-  const [medium, setMedium] = useState("");
-  const [scholarshipResult, setScholarshipResult] = useState("");
-  const [sscResult, setSscResult] = useState("");
-  const [hscResult, setHscResult] = useState("");
-  const [studentStdDivision, setStudentStdDivision] = useState([]);
-  const [std, setStd] = useState("");
-  const [division, setDivision] = useState("");
-  const [stdCount, setStdCount] = useState("");
+  // State for form fields (to support edit mode if needed)
+  const [formState, setFormState] = useState({});
+  const [pdfUploading, setPdfUploading] = useState(false);
 
-  // Reusable fetch function
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (noCache = false) => {
     try {
-      const res = await fetch(`/api/schoolinfo?school_id=${school_id}`);
+      const url = noCache
+        ? `/api/schoolinfo?school_id=${school_id}&_t=${Date.now()}`
+        : `/api/schoolinfo?school_id=${school_id}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setSchoolInfo(data);
-      if (data) {
-        setPrincipalName(data.principal_name || "");
-        setVicePrincipalName(data.vice_principal_name || "");
-        setContact(data.contact || "");
-        setEmail(data.email || "");
-        setAddress(data.address || "");
-        setMotto(data.motto || "");
-        setEstablished(data.established || "");
-        setAffiliation(data.affiliation || "");
-        setStudentCount(data.student_count || "");
-        setFacilities(data.facilities || "");
-        setAchievements(data.achievements || "");
-        setMedium(data.medium || "");
-        setScholarshipResult(data.scholarship_result || "");
-        setSscResult(data.ssc_result || "");
-        setHscResult(data.hsc_result || "");
-        setStudentStdDivision(data.student_std_division ? JSON.parse(data.student_std_division) : []);
+      setFormState(data);
+      if (typeof data.student_std_division === "string") {
+        try {
+          setFormState((prev) => ({ ...prev, student_std_division: JSON.parse(data.student_std_division) }));
+        } catch (_) {}
       }
     } catch (err) {
       console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
     }
   }, [school_id]);
 
   useEffect(() => {
-    if (!school_id) return;
-    fetchData();
+    if (school_id) fetchData();
   }, [school_id, fetchData]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch("/api/addSchoolInfo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          school_id,
-          principalName,
-          vicePrincipalName,
-          contact,
-          email,
-          address,
-          motto,
-          established,
-          affiliation,
-          studentCount,
-          facilities,
-          achievements,
-          studentStdDivision,
-          medium,
-          scholarshipResult,
-          sscResult,
-          hscResult,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage("Information updated successfully!");
-        setEditMode(false);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+  };
 
-        // Re-fetch the updated data
-        await fetchData();
+  const handlePdfChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+      setMessage("Please select a PDF file.");
+      return;
+    }
+    setPdfUploading(true);
+    setMessage("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/uploadSchoolInfoPdf", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.filePath) {
+        setFormState((prev) => ({ ...prev, mahiti_pustikka: data.filePath }));
+        setMessage("PDF uploaded. Click Save to update.");
       } else {
-        setMessage(data.error || "Failed to update information.");
+        setMessage(data?.error || "PDF upload failed.");
       }
-    } catch (error) {
-      setMessage("Error updating information. Please try again.");
+    } catch (err) {
+      setMessage("PDF upload failed.");
+    } finally {
+      setPdfUploading(false);
+      e.target.value = "";
     }
   };
 
-  if (!schoolInfo) {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    try {
+      const payload = {
+        school_id,
+        principal_name: formState.principal_name ?? null,
+        vice_principal_name: formState.vice_principal_name ?? null,
+        contact: formState.contact ?? null,
+        email: formState.email ?? null,
+        address: formState.address ?? null,
+        motto: formState.motto ?? null,
+        established: formState.established ?? null,
+        affiliation: formState.affiliation ?? null,
+        student_count: formState.student_count ?? null,
+        facilities: formState.facilities ?? null,
+        achievements: formState.achievements ?? null,
+        student_std_division: formState.student_std_division ?? null,
+        medium: formState.medium ?? null,
+        scholarship_result: formState.scholarship_result ?? null,
+        ssc_result: formState.ssc_result ?? null,
+        hsc_result: formState.hsc_result ?? null,
+        mahiti_pustikka: formState.mahiti_pustikka ?? null,
+      };
+      const response = await fetch("/api/addSchoolInfo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setMessage("Saved successfully! Page updated.");
+        setEditMode(false);
+        await fetchData(true);
+      } else {
+        setMessage(data?.error || "Failed to save.");
+      }
+    } catch (error) {
+      setMessage("Error saving. Please try again.");
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="text-center py-20 text-blue-900 text-xl font-semibold">
-        Loading School Profile...
+      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-900"></div>
       </div>
     );
   }
 
+  if (!schoolInfo) {
+    return <div className="text-center py-20 text-gray-500">School information not found.</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200 py-12 flex items-center justify-center px-4">
-      <div className="bg-white shadow-2xl rounded-3xl p-8 md:p-12 w-full max-w-4xl border border-blue-100">
-        <div className="flex flex-col items-center space-y-4 mb-6 text-center">
-          <div className="flex items-center justify-center gap-4">
-            <Image src="/images/rayat.png" alt="Rayat Logo" width={50} height={50} />
-            <h1 className="text-2xl font-extrabold text-blue-900">{schoolInfo.school_name}</h1>
-            <Image src="/images/kbp.png" alt="KBP Logo" width={50} height={50} />
+    <div className="min-h-screen bg-gray-50 font-sans">
+      {/* Hero Header */}
+      <div className="relative bg-gradient-to-r from-[#0a192f] via-[#182e53] to-[#1f4068]
+ text-white py-8 px-4 sm:px-6 lg:px-8 shadow-lg">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+
+  {/* Left Logo */}
+          <div className="hidden md:flex items-center justify-center w-28 md:w-32 flex-shrink-0">
+            <HeaderLogo src="/images/rayatlogo1.png" alt="Rayat Shikshan Sanstha" />
           </div>
-          <p className="italic text-blue-600 text-base">Education through self-help is our motto</p>
-          <p className="text-gray-700 text-base">{schoolInfo.address}</p>
+
+          {/* Center School Info */}
+          <div className="text-center flex-1 min-w-0 px-2">
+    <h1 className="text-3xl  md:text-5xl font-extrabold tracking-tight mb-3 drop-shadow-lg">
+      <span className="text-lg text-yellow-300 md:text-xl font-semibold block mb-0.5">Rayat Shikshan Sanstha's</span>
+      {schoolInfo.school_name || "School Name"}
+    </h1>
+
+    <p className="text-yellow-300 text-lg italic flex items-center justify-center gap-2">
+      <FaBookOpen /> "{schoolInfo.motto || "Education through self-help is our motto"}"
+    </p>
+
+    <div className="mt-4">
+      <span className="bg-yellow-400 text-black px-6 py-2 rounded-full text-sm font-semibold shadow-md">
+        Established {schoolInfo.established || "N/A"}
+      </span>
+    </div>
+  </div>
+
+          {/* Right Logo */}
+          <div className="hidden md:flex items-center justify-center w-28 md:w-32 flex-shrink-0">
+            <HeaderLogo src="/images/kbp.png" alt="KBP" />
+          </div>
         </div>
-        <hr className="my-4 border-t-2 border-blue-300" />
-       
-        {message && <p className="text-green-700 mb-4 text-center">{message}</p>}
-        {editMode ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Principal Name" value={principalName} onChange={setPrincipalName} required />
-              <Input label="Vice Principal Name" value={vicePrincipalName} onChange={setVicePrincipalName} required />
-              <Input label="Contact" value={contact} onChange={setContact} required />
-              <Input label="Email" value={email} onChange={setEmail} type="email" required />
-              <Input label="Address" value={address} onChange={setAddress} required />
-              <Input label="Motto" value={motto} onChange={setMotto} />
-              <Input label="Established" value={established} onChange={setEstablished} />
-              <Input label="Total Teachers" value={affiliation} onChange={setAffiliation} />
-              <Input label="Total Students" value={studentCount} onChange={setStudentCount} type="number" required />
-              {/* Medium Dropdown */}
-              <div>
-                <label className="block text-gray-700 mb-1">Medium</label>
-                <select
-                  value={medium}
-                  onChange={e => setMedium(e.target.value)}
-                  className="w-full p-2 border rounded"
-                  required
-                >
-                  <option value="">Select Medium</option>
-                  <option value="English">English</option>
-                  <option value="Semi English">Semi English</option>
-                  <option value="Marathi">Marathi</option>
-                </select>
-              </div>
+
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 -mt-8">
+        {/* Main Content Card */}
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden min-h-[500px]">
+
+          {/* Edit Toggle (Hidden for general users usually, but keeping as requested) */}
+          {/* <div className="flex justify-end p-4">
+            <button
+              onClick={() => setEditMode(!editMode)}
+              className="text-sm text-gray-400 hover:text-blue-600 transition-colors"
+            >
+              {editMode ? "Cancel Edit" : "Edit Info"}
+            </button>
+          </div> */}
+
+          {editMode ? (
+            <div className="p-8">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit School Information</h2>
+              {message && <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg">{message}</div>}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input name="principal_name" label="Principal Name" value={formState.principal_name} onChange={handleInputChange} />
+                  <Input name="vice_principal_name" label="Vice Principal Name" value={formState.vice_principal_name} onChange={handleInputChange} />
+                  <Input name="contact" label="Contact No" value={formState.contact} onChange={handleInputChange} />
+                  <Input name="email" label="Email" value={formState.email} onChange={handleInputChange} />
+                  <Input name="address" label="Address" value={formState.address} onChange={handleInputChange} />
+                  <Input name="motto" label="Motto" value={formState.motto} onChange={handleInputChange} />
+                  <Input name="established" label="Established Year" value={formState.established} onChange={handleInputChange} />
+                  <Input name="student_count" label="Student Count" value={formState.student_count} onChange={handleInputChange} />
+                  <Input name="affiliation" label="Affiliation / Teachers" value={formState.affiliation} onChange={handleInputChange} />
+                  <Input name="medium" label="Medium" value={formState.medium} onChange={handleInputChange} />
+                  <Input name="scholarship_result" label="Scholarship Result" value={formState.scholarship_result} onChange={handleInputChange} />
+                  <Input name="ssc_result" label="SSC Result" value={formState.ssc_result} onChange={handleInputChange} />
+                  <Input name="hsc_result" label="HSC Result" value={formState.hsc_result} onChange={handleInputChange} />
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <TextArea name="facilities" label="Facilities" value={formState.facilities} onChange={handleInputChange} />
+                  <TextArea name="achievements" label="Achievements" value={formState.achievements} onChange={handleInputChange} />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mahiti Pustikka (PDF)</label>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handlePdfChange}
+                      disabled={pdfUploading}
+                      className="w-full p-3 border border-gray-300 rounded-lg file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700"
+                    />
+                    {pdfUploading && <p className="text-sm text-gray-500 mt-1">Uploading…</p>}
+                    {formState.mahiti_pustikka && <p className="text-sm text-green-600 mt-1">PDF attached. Save to apply.</p>}
+                  </div>
+                </div>
+                <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">Save Changes</button>
+              </form>
             </div>
-            {/* Std/Division wise student count section */}
-            <div className="border p-3 rounded mb-2 bg-gray-50">
-              <div className="font-semibold mb-2">Edit Std/Division wise Student Count</div>
-              <div className="flex flex-col md:flex-row gap-2 mb-2">
-                <input type="text" placeholder="Std" value={std} onChange={e => setStd(e.target.value)} className="border p-1 rounded w-full md:w-1/4" />
-                <input type="text" placeholder="Division" value={division} onChange={e => setDivision(e.target.value)} className="border p-1 rounded w-full md:w-1/4" />
-                <input type="number" placeholder="Count" value={stdCount} onChange={e => setStdCount(e.target.value)} className="border p-1 rounded w-full md:w-1/4" />
-                <button type="button" className="bg-teal-700 text-white px-3 rounded" onClick={() => {
-                  if(std && division && stdCount) {
-                    setStudentStdDivision([...studentStdDivision, { std, division, count: Number(stdCount) }]);
-                    setStd(""); setDivision(""); setStdCount("");
-                  }
-                }}>Add</button>
+          ) : (
+            <div className="p-0">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50/50">
+                <StatItem label="Total Students" value={schoolInfo.student_count} icon={<FaUserGraduate className="text-blue-500" />} />
+                <StatItem label="Medium" value={schoolInfo.medium} icon={<FaBookOpen className="text-green-500" />} />
+                <StatItem label="Teachers/Affiliation" value={schoolInfo.affiliation} icon={<FaChalkboardTeacher className="text-purple-500" />} />
+                <StatItem label="Established" value={schoolInfo.established} icon={<FaUniversity className="text-orange-500" />} />
               </div>
-              {/* Table of added std/division */}
-              {studentStdDivision.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border">
-                    <thead><tr><th className="border px-2">Std</th><th className="border px-2">Division</th><th className="border px-2">Count</th><th className="border px-2">Remove</th></tr></thead>
-                    <tbody>
-                      {studentStdDivision.map((row, idx) => (
-                        <tr key={idx}>
-                          <td className="border px-2">{row.std}</td>
-                          <td className="border px-2">{row.division}</td>
-                          <td className="border px-2">{row.count}</td>
-                          <td className="border px-2"><button type="button" className="text-red-600" onClick={() => setStudentStdDivision(studentStdDivision.filter((_, i) => i !== idx))}>Remove</button></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8">
+                {/* Left Column: Management & Contact */}
+                <div className="space-y-8">
+                  <div className="bg-blue-50/50 rounded-2xl p-6 border border-blue-100 transform transition hover:-translate-y-1 duration-300">
+                    <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
+                      <FaUserTie /> Administration
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-white p-2 rounded-full shadow-sm text-blue-600"><FaUserTie /></div>
+                        <div>
+                          <p className="text-sm text-gray-500">Principal</p>
+                          <p className="font-semibold text-gray-800">{schoolInfo.principal_name || "—"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="bg-white p-2 rounded-full shadow-sm text-blue-600"><FaUserTie /></div>
+                        <div>
+                          <p className="text-sm text-gray-500">Vice Principal</p>
+                          <p className="font-semibold text-gray-800">{schoolInfo.vice_principal_name || "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <FaPhoneAlt className="text-gray-600" /> Contact Details
+                    </h3>
+                    <div className="space-y-3">
+                      <p className="flex items-center gap-3 text-gray-700">
+                        <FaPhoneAlt className="text-blue-500 text-sm" /> {schoolInfo.contact}
+                      </p>
+                      <p className="flex items-center gap-3 text-gray-700">
+                        <FaEnvelope className="text-blue-500 text-sm" /> {schoolInfo.email}
+                      </p>
+                      <p className="flex items-start gap-3 text-gray-700">
+                        <FaMapMarkerAlt className="text-blue-500 text-sm mt-1" /> {schoolInfo.address}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Middle Column: Facilities & Achievements */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* Academic Results Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <ResultCard title="SSC Result" value={schoolInfo.ssc_result} color="bg-green-50 text-green-700 border-green-200" />
+                    <ResultCard title="HSC Result" value={schoolInfo.hsc_result} color="bg-purple-50 text-purple-700 border-purple-200" />
+                    <ResultCard title="Scholarship" value={schoolInfo.scholarship_result} color="bg-yellow-50 text-yellow-700 border-yellow-200" />
+                  </div>
+
+                  <div className="prose max-w-none">
+                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 border-b pb-2 mb-4">
+                      <FaBuilding className="text-blue-600" /> Facilities
+                    </h3>
+                    <p className="text-gray-700 whitespace-pre-line leading-relaxed bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                      {schoolInfo.facilities || "No specific facilities listed."}
+                    </p>
+                  </div>
+
+                  <div className="prose max-w-none">
+                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 border-b pb-2 mb-4">
+                      <FaTrophy className="text-yellow-500" /> Achievements
+                    </h3>
+                    <p className="text-gray-700 whitespace-pre-line leading-relaxed bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                      {schoolInfo.achievements || "No specific achievements listed."}
+                    </p>
+                  </div>
+
+                  {schoolInfo.mahiti_pustikka && (
+                    <div className="prose max-w-none">
+                      <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 border-b pb-2 mb-4">
+                        <FaFilePdf className="text-red-500" /> Mahiti Pustikka
+                      </h3>
+                      <a
+                        href={schoolInfo.mahiti_pustikka}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded-xl hover:bg-red-100 transition-colors font-medium"
+                      >
+                        <FaFilePdf /> View / Download PDF
+                      </a>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+
+              {/* Student Distribution Table */}
+              {schoolInfo.student_std_division && (
+                <div className="p-8 border-t border-gray-100 bg-gray-50">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <FaUserGraduate /> Student Class Distribution
+                  </h3>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    {(() => {
+                      let data = [];
+                      try {
+                        data = typeof schoolInfo.student_std_division === 'string'
+                          ? JSON.parse(schoolInfo.student_std_division)
+                          : schoolInfo.student_std_division;
+                      } catch (e) {
+                        console.error("JSON parse error", e);
+                      }
+
+                      if (!Array.isArray(data) || data.length === 0) {
+                        return <div className="p-4 text-center text-gray-500">No student distribution data available.</div>;
+                      }
+
+                      return (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left">
+                            <thead>
+                              <tr className="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
+                                <th className="px-6 py-4 font-semibold">Standard</th>
+                                <th className="px-6 py-4 font-semibold">Division</th>
+                                <th className="px-6 py-4 font-semibold text-right">Student Count</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {data.map((row, idx) => (
+                                <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
+                                  <td className="px-6 py-4 text-gray-800 font-medium">{row.std}</td>
+                                  <td className="px-6 py-4 text-gray-600">{row.division}</td>
+                                  <td className="px-6 py-4 text-gray-800 text-right font-semibold">{row.count}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Textarea label="Facilities" value={facilities} onChange={setFacilities} required />
-              <Textarea label="Achievements" value={achievements} onChange={setAchievements} required />
-              <Input label="Scholarship Result" value={scholarshipResult} onChange={setScholarshipResult} />
-              <Input label="SSC Result" value={sscResult} onChange={setSscResult} />
-              <Input label="HSC Result (If Junior college attached)" value={hscResult} onChange={setHscResult} />
-            </div>
-            <div className="flex gap-2 mt-2">
-              <button type="submit" className="bg-teal-900 text-white p-2 rounded w-full">
-                Save
-              </button>
-              <button type="button" className="bg-gray-300 text-gray-800 p-2 rounded w-full" onClick={() => setEditMode(false)}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-6">
-              <div>
-                <h2 className="text-lg font-semibold text-blue-800 mb-1">📜 Established</h2>
-                <p className="text-gray-700 text-base">{schoolInfo.established}</p>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-blue-800 mb-1">👨‍🎓 Total Students</h2>
-                <p className="text-gray-700 text-base">{schoolInfo.student_count}</p>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-blue-800 mb-1">🎓 Total Teachers</h2>
-                <p className="text-gray-700 text-base">{schoolInfo.affiliation}</p>
-              </div>
-              {/* Medium field */}
-              <div className="md:col-span-3">
-                <h2 className="text-lg font-semibold text-blue-800 mb-1">🌐 Medium</h2>
-                <p className="text-gray-700 text-base">{schoolInfo.medium}</p>
-              </div>
-              {/* Results fields */}
-              <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                <div>
-                  <h2 className="text-lg font-semibold text-blue-800 mb-1">🏅 Scholarship Result</h2>
-                  <p className="text-gray-700 text-base">{schoolInfo.scholarship_result}</p>
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-blue-800 mb-1">📝 SSC Result</h2>
-                  <p className="text-gray-700 text-base">{schoolInfo.ssc_result}</p>
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-blue-800 mb-1">🏫 HSC Result</h2>
-                  <p className="text-gray-700 text-base">{schoolInfo.hsc_result}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-blue-50 p-3 rounded-lg shadow space-y-2">
-                <h2 className="text-lg font-bold text-blue-900">🏫 School Management</h2>
-                <p><strong className="text-blue-800">Principal:</strong> {schoolInfo.principal_name}</p>
-                <p><strong className="text-blue-800">Vice Principal:</strong> {schoolInfo.vice_principal_name}</p>
-              </div>
-
-              <div className="bg-blue-50 p-3 rounded-lg shadow space-y-2">
-                <h2 className="text-lg font-bold text-blue-900">📞 Contact</h2>
-                <p><strong className="text-blue-800">Phone:</strong> {schoolInfo.contact}</p>
-                <p><strong className="text-blue-800">Email:</strong> {schoolInfo.email}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h2 className="text-lg font-bold text-blue-900 mb-1">🏆 Achievements</h2>
-                <p className="text-gray-700 whitespace-pre-wrap text-sm">{schoolInfo.achievements}</p>
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-blue-900 mb-1">🏢 Facilities</h2>
-                <p className="text-gray-700 whitespace-pre-wrap text-sm">{schoolInfo.facilities}</p>
-              </div>
-            </div>
-            {/* Std/Division wise student count table */}
-            {schoolInfo.student_std_division && (
-              <div className="mt-6 bg-white p-4 rounded-xl shadow border border-blue-100 flex flex-col items-center">
-                <h2 className="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
-                  <span role="img" aria-label="student">👨‍🎓</span> Student Count (Std & Division wise)
-                </h2>
-                <div className="overflow-x-auto w-full flex justify-center">
-                  <table className="min-w-[400px] max-w-xl w-full table-auto border-collapse rounded-lg overflow-hidden">
-                    <thead>
-                      <tr className="bg-blue-50 text-blue-900">
-                        <th className="py-1 px-2 text-sm font-semibold border-b border-blue-100 text-center">Std</th>
-                        <th className="py-1 px-2 text-sm font-semibold border-b border-blue-100 text-center">Division</th>
-                        <th className="py-1 px-2 text-sm font-semibold border-b border-blue-100 text-center">Count</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        let data = [];
-                        try {
-                          data = JSON.parse(schoolInfo.student_std_division);
-                        } catch (e) {}
-                        if (!Array.isArray(data) || data.length === 0) {
-                          return (
-                            <tr><td colSpan={3} className="text-center py-2 text-gray-400">No data</td></tr>
-                          );
-                        }
-                        return data.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-blue-50 transition-colors">
-                            <td className="py-1 px-2 border-b border-blue-50 text-blue-900 text-center text-sm">{row.std}</td>
-                            <td className="py-1 px-2 border-b border-blue-50 text-blue-900 text-center text-sm">{row.division}</td>
-                            <td className="py-1 px-2 border-b border-blue-50 text-blue-900 text-center text-sm">{row.count}</td>
-                          </tr>
-                        ));
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function Input({ label, value, onChange, type = "text", required = false }) {
+// Sub-components for cleaner code
+function StatItem({ label, value, icon }) {
+  if (value === undefined || value === null || value === "") return null;
+  return (
+    <div className="p-6 text-center group hover:bg-white transition-colors">
+      <div className="text-2xl mb-2 flex justify-center group-hover:scale-110 transition-transform">{icon}</div>
+      <div className="text-sm text-gray-500 uppercase tracking-widest font-semibold">{label}</div>
+      <div className="text-lg font-bold text-gray-800 mt-1">{value}</div>
+    </div>
+  );
+}
+
+function ResultCard({ title, value, color }) {
+  if (!value) return null;
+  return (
+    <div className={`p-4 rounded-xl border ${color} shadow-sm`}>
+      <p className="text-xs uppercase tracking-wider font-bold opacity-70 mb-1">{title}</p>
+      <p className="text-xl font-bold">{value}</p>
+    </div>
+  );
+}
+
+function Input({ label, name, value, onChange, type = "text" }) {
   return (
     <div>
-      <label className="block text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       <input
         type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full p-2 border rounded"
-        required={required}
+        name={name}
+        value={value || ""}
+        onChange={onChange}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
       />
     </div>
   );
 }
 
-// Reusable Textarea component
-function Textarea({ label, value, onChange, required = false }) {
+function TextArea({ label, name, value, onChange }) {
   return (
     <div>
-      <label className="block text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full p-2 border rounded min-h-[80px]"
-        required={required}
+        name={name}
+        value={value || ""}
+        onChange={onChange}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none min-h-[120px]"
       />
     </div>
   );

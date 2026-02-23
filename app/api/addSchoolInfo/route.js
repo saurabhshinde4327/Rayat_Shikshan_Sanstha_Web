@@ -1,87 +1,96 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+// One-time: ALTER TABLE school_info ADD COLUMN mahiti_pustikka VARCHAR(500) NULL;
+
 export async function POST(req) {
   try {
     const body = await req.json();
-    const {
-      school_id,
-      principalName,
-      vicePrincipalName,
-      contact,
-      email,
-      address,
-      motto,
-      established,
-      affiliation,
-      studentCount, // <-- updated here
-      facilities,
-      achievements,
-      studentStdDivision, // <-- new field for std/division wise student count
-      medium, // <-- add medium
-      scholarshipResult, // <-- add scholarship result
-      sscResult, // <-- add ssc result
-      hscResult, // <-- add hsc result
-    } = body;
+    const school_id = body.school_id;
 
     if (!school_id || school_id === 'undefined' || school_id === 'null') {
       return NextResponse.json({ error: 'Invalid school ID. Please log in again.' }, { status: 400 });
     }
 
-    const values = [
-      school_id,
-      principalName || null,
-      vicePrincipalName || null,
-      contact || null,
-      email || null,
-      address || null,
-      motto || null,
-      established || null,
-      affiliation || null,
-      studentCount || null, // <-- use camelCase from body
-      facilities || null,
-      achievements || null,
-      studentStdDivision ? JSON.stringify(studentStdDivision) : null, // <-- add to values
-      medium || null, // <-- add medium to values
-      scholarshipResult || null, // <-- add scholarship result
-      sscResult || null, // <-- add ssc result
-      hscResult || null, // <-- add hsc result
-    ];
+    // Read fields explicitly (support both snake_case from form and camelCase)
+    const principal_name = body.principal_name ?? body.principalName ?? null;
+    const vice_principal_name = body.vice_principal_name ?? body.vicePrincipalName ?? null;
+    const contact = body.contact ?? null;
+    const email = body.email ?? null;
+    const address = body.address ?? null;
+    const motto = body.motto ?? null;
+    const established = body.established ?? null;
+    const affiliation = body.affiliation ?? null;
+    const student_count = body.student_count ?? body.studentCount ?? null;
+    const facilities = body.facilities ?? null;
+    const achievements = body.achievements ?? null;
+    const stdDivision = body.student_std_division ?? body.studentStdDivision ?? null;
+    const medium = body.medium ?? null;
+    const scholarship_result = body.scholarship_result ?? body.scholarshipResult ?? null;
+    const ssc_result = body.ssc_result ?? body.sscResult ?? null;
+    const hsc_result = body.hsc_result ?? body.hscResult ?? null;
+    const mahiti_pustikka = body.mahiti_pustikka ?? body.mahitiPustikka ?? null;
+    
+    console.log("addSchoolInfo - mahiti_pustikka received:", mahiti_pustikka);
 
-    const query = `
-      INSERT INTO school_info (
-        school_id, principal_name, vice_principal_name, contact, email,
-        address, motto, established, affiliation, student_count, facilities, achievements, student_std_division, medium, scholarship_result, ssc_result, hsc_result
-      ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        principal_name=VALUES(principal_name),
-        vice_principal_name=VALUES(vice_principal_name),
-        contact=VALUES(contact),
-        email=VALUES(email),
-        address=VALUES(address),
-        motto=VALUES(motto),
-        established=VALUES(established),
-        affiliation=VALUES(affiliation),
-        student_count=VALUES(student_count),
-        facilities=VALUES(facilities),
-        achievements=VALUES(achievements),
-        student_std_division=VALUES(student_std_division),
-        medium=VALUES(medium),
-        scholarship_result=VALUES(scholarship_result),
-        ssc_result=VALUES(ssc_result),
-        hsc_result=VALUES(hsc_result)
-    `;
+    // Same school_id: update existing row only, never insert duplicate (table has id as PK, not unique school_id)
+    const [existing] = await pool.execute(
+      'SELECT id FROM school_info WHERE school_id = ? LIMIT 1',
+      [school_id]
+    );
 
-    const [result] = await pool.execute(query, values);
-
-    if (result.affectedRows > 0) {
-      return NextResponse.json({ message: 'School information added successfully' }, { status: 200 });
+    if (existing.length > 0) {
+      // UPDATE existing row
+      const updateQuery = `
+        UPDATE school_info SET
+          principal_name = ?, vice_principal_name = ?, contact = ?, email = ?, address = ?,
+          motto = ?, established = ?, affiliation = ?, student_count = ?, facilities = ?, achievements = ?,
+          student_std_division = ?, medium = ?, scholarship_result = ?, ssc_result = ?, hsc_result = ?,
+          mahiti_pustikka = ?
+        WHERE school_id = ?
+      `;
+      const updateValues = [
+        principal_name, vice_principal_name, contact, email, address,
+        motto, established, affiliation, student_count, facilities, achievements,
+        stdDivision ? JSON.stringify(stdDivision) : null, medium, scholarship_result, ssc_result, hsc_result,
+        mahiti_pustikka,
+        school_id,
+      ];
+      const [result] = await pool.execute(updateQuery, updateValues);
+      console.log("UPDATE result - affectedRows:", result.affectedRows, "mahiti_pustikka:", mahiti_pustikka);
+      if (result.affectedRows >= 0) {
+        return NextResponse.json({ message: 'School information updated successfully' }, { status: 200 });
+      }
     } else {
-      return NextResponse.json({ error: 'Failed to add school information' }, { status: 500 });
+      // INSERT new row only when none exists for this school_id
+      const insertQuery = `
+        INSERT INTO school_info (
+          school_id, principal_name, vice_principal_name, contact, email,
+          address, motto, established, affiliation, student_count, facilities, achievements, student_std_division, medium, scholarship_result, ssc_result, hsc_result, mahiti_pustikka
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      const insertValues = [
+        school_id,
+        principal_name, vice_principal_name, contact, email, address,
+        motto, established, affiliation, student_count, facilities, achievements,
+        stdDivision ? JSON.stringify(stdDivision) : null, medium, scholarship_result, ssc_result, hsc_result,
+        mahiti_pustikka,
+      ];
+      const [result] = await pool.execute(insertQuery, insertValues);
+      console.log("INSERT result - affectedRows:", result.affectedRows, "mahiti_pustikka:", mahiti_pustikka);
+      if (result.affectedRows > 0) {
+        return NextResponse.json({ message: 'School information added successfully' }, { status: 200 });
+      }
     }
+
+    return NextResponse.json({ error: 'Failed to save school information' }, { status: 500 });
   } catch (error) {
     console.error('Database Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Error details:', error.message, error.code);
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      details: error.message,
+      hint: 'Ensure mahiti_pustikka column exists: ALTER TABLE school_info ADD COLUMN mahiti_pustikka VARCHAR(500) NULL;'
+    }, { status: 500 });
   }
 }

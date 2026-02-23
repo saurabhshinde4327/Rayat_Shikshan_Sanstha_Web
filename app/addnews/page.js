@@ -10,13 +10,14 @@ export default function AddNews() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [file, setFile] = useState(null);
+  const [circulatNo, setCirculatNo] = useState(""); // <-- NEW STATE
   const [message, setMessage] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!region || !title || !date || !file) {
+    if (!region || !title || !date || !file || !circulatNo) {
       setMessage("All fields are required");
       return;
     }
@@ -26,7 +27,7 @@ export default function AddNews() {
     formData.append("title", title);
     formData.append("date", date);
     formData.append("file", file);
-
+    formData.append("circulat_no", circulatNo); // <-- ADD THIS
 
     const response = await fetch("/api/addNews", {
       method: "POST",
@@ -41,64 +42,14 @@ export default function AddNews() {
       setTitle("");
       setDate("");
       setFile(null);
+      setCirculatNo("");
       router.push("/managenews");
-
-
-
-
     }
   };
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar setActiveSection={(section) => {
-                        if (section === "addNews") {
-                          router.push("/addnews");
-                        } else if (section === "manageNews") {
-                          router.push("/managenews");
-                        } else if (section === "addNotice") {
-                          router.push("/addnotice");
-                        } else if (section === "manageNotices") {
-                          router.push("/managenotices");
-                        } else if (section === "addEvent") {
-                          router.push("/adddocuments");
-                        } else if (section === "manageEvents") {
-                          router.push("/managedocuments");
-                        } else if (section === "manageSchoolNews") {
-                          router.push("/adminschoolnews");
-                        } else if (section === "manageSchoolEvents") {
-                          router.push("/manageadminevents");
-                        } else if (section === "addGallery") {
-                          router.push("/addimage");
-                        } else if (section === "addRecentActivity") {
-                          router.push("/addevents");
-                        } else if (section === "manageRecentActivities") {
-                          router.push("/manageevents");
-                        } else if (section === "addAchievement") {
-                          router.push("/addachievements");
-                        } else if (section === "manageAchievements") {
-                          router.push("/manageachievements");
-                        } else if (section === "addAchievementnews") {
-                          router.push("/addachievementsnews");
-                        } else if (section === "manageAchievementsnews") {
-                          router.push("/manageachievementsnews");
-                        } else if (section === "addAlumni") {
-                          router.push("/addalumni");
-                        } else if (section === "manageAlumni") {
-                          router.push("/managealumni");
-                        } else if (section === "managefeedbackNews") {
-                          router.push("/managefeedback");
-                        } else if (section === "addrecruitmentNews") {
-                          router.push("/addrecruitment");
-                        } else if (section === "managerecruitmentNews") {
-                          router.push("/managerecruitment");
-                        } else if (section === "addScrollingNews") {
-                          router.push("/addscrollingnews");
-                        } else if (section === "manageScrollingNews") {
-                          router.push("/managescrollingnews");
-                        } 
-                        
-                      }} />
+      <Sidebar setActiveSection={() => {}} />
 
       <div className="flex-1 flex flex-col">
         <Topbar />
@@ -106,7 +57,9 @@ export default function AddNews() {
           <div className="max-w-lg mx-auto bg-white p-6 rounded shadow">
             <h2 className="text-xl font-bold mb-4">Add News</h2>
             {message && <p className="text-red-600">{message}</p>}
+
             <form onSubmit={handleSubmit} className="space-y-4">
+
               <div>
                 <label className="block text-gray-700">Region Name</label>
                 <input
@@ -114,10 +67,10 @@ export default function AddNews() {
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
                   className="w-full p-2 border rounded"
-                  placeholder="Enter region (e.g. Western Division)"
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-gray-700">Title</label>
                 <input
@@ -128,6 +81,19 @@ export default function AddNews() {
                   required
                 />
               </div>
+
+              <div>
+                <label className="block text-gray-700">Circular No</label>
+                <input
+                  type="text"
+                  value={circulatNo}
+                  onChange={(e) => setCirculatNo(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="Enter circular number"
+                  required
+                />
+              </div>
+
               <div>
                 <label className="block text-gray-700">Date</label>
                 <input
@@ -138,6 +104,7 @@ export default function AddNews() {
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-gray-700">Upload File</label>
                 <input
@@ -147,6 +114,7 @@ export default function AddNews() {
                   required
                 />
               </div>
+
               <button
                 type="submit"
                 className="bg-teal-900 text-white p-2 rounded w-full"
@@ -160,5 +128,3 @@ export default function AddNews() {
     </div>
   );
 }
-
-

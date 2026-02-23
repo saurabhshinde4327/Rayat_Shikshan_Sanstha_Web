@@ -1,97 +1,159 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Link from "next/link";
-import Header from "../components/Header"; // adjust path if needed
+import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { useEffect } from "react";
 
 export default function AimsPage() {
+  // Simple fade-in effect on mount
+  useEffect(() => {
+    const elements = document.querySelectorAll(".animate-fade-in");
+    elements.forEach((el, index) => {
+      setTimeout(() => {
+        el.classList.add("opacity-100", "translate-y-0");
+        el.classList.remove("opacity-0", "translate-y-4");
+      }, index * 100);
+    });
+  }, []);
+
   return (
     <>
-    <div className="min-h-screen w-full bg-[#f5f6f8]">
+      <div className="min-h-screen w-full bg-[#f8f9fa] font-sans">
+        <Header />
 
-      {/* ================= HEADER ================= */}
-      <Header title="ABOUT THE SANSTHA" subtitle="ABOUT SANSTHA" />
+        {/* ================= PAGE TITLE ================= */}
+        <section className="w-full h-[120px] relative bg-[#f6eee0]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <h3 className="text-[#7A0726] text-3xl md:text-4xl font-extrabold uppercase">
+              ध्येय आणि उद्दिष्टे
+            </h3>
 
-      {/* ================= PAGE TITLE ================= */}
-      <section className="w-full h-[120px] relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#f6eee0] via-white to-[#f6eee0]" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <h3 className="text-[#7A0726] text-3xl md:text-4xl font-extrabold uppercase">
-            ध्येश व उद्दिष्ट
-          </h3>
-          <nav className="text-sm md:text-base text-gray-600">
-            <ol className="inline-flex">
-              <li className="flex items-center">
-                <Link href="/" className="text-[#7A0726] hover:underline">
-                  मुख्य पृष्ठ
-                </Link>
-                <span className="mx-2">/</span>
-              </li>
-              <li className="text-gray-500">ध्येश व उद्दिष्ट</li>
-            </ol>
-          </nav>
-        </div>
-      </section>
+            <nav className="text-sm md:text-base text-gray-600">
+              <ol className="inline-flex">
+                <li>
+                  <Link href="/" className="text-[#7A0726] hover:underline">
+                    मुख्य पृष्ठ
+                  </Link>
+                  <span className="mx-2">/</span>
+                </li>
+                <li className="text-gray-500">ध्येय आणि उद्दिष्टे</li>
+              </ol>
+            </nav>
+          </div>
+        </section>
 
-      {/* ================= CONTENT ================= */}
-      <div className="bg-white text-gray-800 px-4 py-12">
-        <div className="max-w-5xl mx-auto text-base">
+        {/* ================= CONTENT ================= */}
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
 
-          {/* Card Container */}
-          <div
-            className="
-              bg-[#fcfafa]
-              rounded-xl
-              p-6
-              shadow-2xl
-              border-t border-l 
-              border-r-4 border-b-4
-              border-[#e2476c]
-            "
-          >
-            <ol className="list-decimal ml-4 space-y-3 text-gray-700 text-[18px] text-justify">
-            <li className="text-justify leading-relaxed">
-                रयत शिक्षण संस्थेची उद्दिष्ट्ये आणि ध्येये खालीलप्रमाणे:<br />
-                भारताच्या भावी पिढीला आणि विशेषतः महाराष्ट्राच्या रहिवाशांना,
-पूर्व-प्राथमिक ते विद्यापीठ स्तरापर्यंत, सामाजिक, सांस्कृतिक, वैज्ञानिक,
-तांत्रिक, वैद्यकीय, कायदेशीर, कृषी, वाणिज्य, औद्योगिक आणि
-शारीरिक प्रशिक्षणाचा समावेश असलेले उदार आणि व्यावसायिक शिक्षण
-देणे;
-              </li>
-             <li className="text-justify leading-relaxed">वरील उद्देशांसाठी योग्य शिक्षकांना प्रशिक्षण देणे;<br />
-              गावांच्या आणि ग्रामीण उद्योगांच्या उन्नतीसाठी ग्रामसेवकांना प्रशिक्षण
-देणे;<br />
- परिस्थितीनुसार संस्थेची उद्दिष्ट्ये आणि ध्येये साध्य करण्यास पूरक
-ठरतील अशा मोफत ग्रंथालये आणि वाचनालये, वसतिगृहे, निवासी
-आणि सामान्य शाळा, महाविद्यालये, स्वायत्त महाविद्यालये, विद्यापीठ,
-संशोधन संस्था, दूरस्थ शिक्षण आणि शैक्षणिक प्रकल्प आणि इतर संस्था
-उघडणे;</li>
-            </ol>
+          <div className="space-y-12">
 
-            {/* Bottom Info Box */}
-            <div className="mt-6 p-4 bg-white rounded-lg border border-gray-100 shadow">
-              <p className="text-gray-600 text-m leading-relaxed text-justify">
-वरीलपैकी कोणतीही उद्दिष्ट्ये आणि ध्येये साध्य करण्यासाठी आनुषंगिक
-किंवा पूरक असलेल्या सर्व कायदेशीर गोष्टी आणि कृती करणे;<br />
- रयत शिक्षण संस्था &#39;कमवा आणि शिका&#39; या तत्त्वावर &#39;शिकताना कमवा&#39;
-या माध्यमातून गरिबांच्या शिक्षणासाठी सुविधा पुरवेल. संस्थेच्या
-संस्थांचे संचालन अशा प्रकारे केले जाईल की, लिंग, प्रदेश, धर्म, जात,
-पंथ किंवा वर्ग असा कोणताही भेदभाव केला जाणार नाही आणि
-शक्यतोवर शिक्षण शुल्क माफ असेल. ही संस्था अराजकीय असेल.
-संस्थेच्या व्यवस्थापन परिषदेचे सदस्य, आजीवन सदस्य, शिक्षक आणि
-कर्मचारी संस्थेच्या संस्थांच्या परिसरात कोणत्याही राजकीय कार्यात
-सहभागी होणार नाहीत. संस्थेतील विद्यार्थी राजकारणात सक्रिय भाग
-घेणार नाहीत आणि आपले संपूर्ण लक्ष शिक्षण पुढे नेण्यावर केंद्रित
-करतील.              </p>
+            {/* 1. Main Objectives Section */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-t-8 border-[#7A0726] animate-fade-in opacity-0 translate-y-4 transition-all duration-700">
+              <div className="p-8 md:p-10">
+                <h2 className="text-2xl md:text-2xl font-bold text-[#7A0726] mb-8 border-b pb-4 inline-block">
+                  १. रयत शिक्षण संस्थेची प्रमुख उद्दिष्ट्ये
+                </h2>
+
+                <ul className="space-y-6">
+                  {/* 1.A */}
+                  <li className="flex gap-4 items-start group">
+                    <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-50 text-[#7A0726] font-bold rounded-full group-hover:bg-[#7A0726] group-hover:text-white transition-colors duration-300">
+                      १.
+                    </span>
+                    <p className="text-lg text-gray-700 leading-relaxed pt-1 text-justify">
+                      भारतातील उदयोन्मुख पिढीला आणि विशेष करून महाराष्ट्रातील
+                      रहिवाशांना <span className="font-semibold text-[#7A0726]">उदात्त व व्यावसायिक शिक्षण</span> प्राथमिक ते विद्यापीठ
+                      स्तरापर्यंत देणे. ज्यामध्ये सामाजिक, सांस्कृतिक, वैज्ञानिक, तांत्रिक,
+                      शेती, व्यापार, औद्योगिक, शारीरिक प्रशिक्षण यांचा अंतर्भाव असेल.
+                    </p>
+                  </li>
+
+                  {/* 1.B */}
+                  <li className="flex gap-4 items-start group">
+                    <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-50 text-[#7A0726] font-bold rounded-full group-hover:bg-[#7A0726] group-hover:text-white transition-colors duration-300">
+                      २.
+                    </span>
+                    <p className="text-lg text-gray-700 leading-relaxed pt-1 text-justify">
+                      वरील हेतूसाठी योग्य शिक्षकांना प्रशिक्षण देणे.
+                    </p>
+                  </li>
+
+                  {/* 1.C */}
+                  <li className="flex gap-4 items-start group">
+                    <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-50 text-[#7A0726] font-bold rounded-full group-hover:bg-[#7A0726] group-hover:text-white transition-colors duration-300">
+                      ३.
+                    </span>
+                    <p className="text-lg text-gray-700 leading-relaxed pt-1 text-justify">
+                      गाव कामगारांना गावाच्या उन्नतीसाठी व ग्रामीण उद्योगासाठी प्रशिक्षित करणे.
+                    </p>
+                  </li>
+
+                  {/* 1.D */}
+                  <li className="flex gap-4 items-start group">
+                    <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-50 text-[#7A0726] font-bold rounded-full group-hover:bg-[#7A0726] group-hover:text-white transition-colors duration-300">
+                      ४.
+                    </span>
+                    <p className="text-lg text-gray-700 leading-relaxed pt-1 text-justify">
+                      संस्थेच्या ध्येय धोरणानुसार व परिस्थितीजन्य निर्णयानुसार मोफत ग्रंथालये,
+                      वाचनालये, वसतिगृहे, निवासी व सर्वसाधारण शाळा, महाविद्यालये व
+                      अन्य संस्था सुरू करणे.
+                    </p>
+                  </li>
+
+                  {/* 1.E */}
+                  <li className="flex gap-4 items-start group">
+                    <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-50 text-[#7A0726] font-bold rounded-full group-hover:bg-[#7A0726] group-hover:text-white transition-colors duration-300">
+                      ५.
+                    </span>
+                    <p className="text-lg text-gray-700 leading-relaxed pt-1 text-justify">
+                      वरील ध्येय धोरणाच्या अधीन राहून सर्व कायदेशीर बाबी व नियम करणे.
+                    </p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* 2. Earn and Learn Section */}
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-[FFFFFF] text-black rounded-2xl shadow-xl p-8 md:p-10 animate-fade-in opacity-0 translate-y-4 transition-all duration-700 transform hover:-translate-y-1 hover:shadow-2xl">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+                    {/* Icon: Education/Self reliance */}
+                    <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                  </div>
+                  <h2 className="text-2xl font-bold uppercase tracking-wide text-[#7A0726]">२. स्वावलंबन तत्त्व</h2>
+                </div>
+                <p className="text-lg leading-relaxed text-black text-justify">
+                  स्वावलंबन तत्वातून रयत शिक्षण संस्था गरजूंना <span className="text-yellow-400 font-bold">"कमवा व शिका"</span> या
+                  योजनेच्या माध्यमातून शैक्षणिक सुविधा पुरवेल. संस्थेचे कामकाज लिंग, धर्म,
+                  प्रदेश, जात, वंश, वर्ण हे भेद न करता व शक्य तेथे शिक्षण फी न घेता
+                  द्यावेत.
+                </p>
+              </div>
+
+              {/* 3. Non-Political Section */}
+              <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100 animate-fade-in opacity-0 translate-y-4 transition-all duration-700 transform hover:-translate-y-1 hover:shadow-2xl">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
+                    {/* Icon: Policy/Shield */}
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#7A0726] uppercase tracking-wide">३. अराजकीय धोरण</h2>
+                </div>
+                <p className="text-lg leading-relaxed text-black text-justify">
+                  संस्था <span className="font-semibold text-[#7A0726]">अराजकीय</span> असेल. व्यवस्थापन समिती सदस्य, आजीव सदस्य,
+                  शिक्षक, नोकर हे राजकीय बाबींमध्ये सहभागी होणार नाहीत. संस्थेचे
+                  विद्यार्थी राजकारणात सक्रिय सहभाग घेणार नाहीत ते त्यांच्या शिक्षणावर
+                  निष्ठा ठेवतील.
+                </p>
+              </div>
             </div>
 
           </div>
         </div>
       </div>
-
-    </div>
-    <Footer />
+      <Footer />
     </>
   );
 }
